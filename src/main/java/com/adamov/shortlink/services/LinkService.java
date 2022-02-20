@@ -4,9 +4,9 @@ import com.adamov.shortlink.entity.Link;
 import com.adamov.shortlink.entity.User;
 import com.adamov.shortlink.repositories.LinkRepository;
 import com.adamov.shortlink.repositories.UserRepository;
+import com.adamov.shortlink.statistic.StatisticOfClick;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
-
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
@@ -15,11 +15,12 @@ import java.util.TreeMap;
 public class LinkService {
     private static final String CHARS="qwertyuiopasdfghjklzxcvbnm0123456789";
     private final Random random=new Random();
-
+    private final StatisticOfClick statistic;
     private final LinkRepository linkRepository;
     private final UserRepository userRepository;
 
-    public LinkService(LinkRepository linkRepository, UserRepository userRepository) {
+    public LinkService(StatisticOfClick statistic, LinkRepository linkRepository, UserRepository userRepository) {
+        this.statistic = statistic;
         this.linkRepository = linkRepository;
         this.userRepository = userRepository;
     }
@@ -74,9 +75,6 @@ public class LinkService {
 
     }
 
-
-
-
     public boolean delete(String shortLink, Long id) {
         Link link=linkRepository.findByShortLink(shortLink);
         User user=userRepository.findById(id).orElse(null);
@@ -85,8 +83,9 @@ public class LinkService {
         else{
             if (user.haveHash(link.getHash())){
             user.deleteHash(link.getHash());
+            statistic.deleteLink(shortLink);
             userRepository.save(user);
-                linkRepository.delete(link);
+            linkRepository.delete(link);
         return true;}
         else return false;}
 
